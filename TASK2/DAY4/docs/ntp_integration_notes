@@ -1,0 +1,24 @@
+# NTP Integration Notes
+
+## How NTP Works on ESP32
+- configTime() sets up SNTP client
+- getLocalTime() blocks until sync or timeout
+- Returns false if sync fails within timeout
+
+## Timezone Configuration
+- IST = UTC + 5 hours 30 minutes
+- GMT_OFFSET_SEC = 5 * 3600 + 30 * 60 = 19800
+- DAYLIGHT_OFFSET_SEC = 0 (India has no DST)
+
+## When NTP is Blocked (Firewall)
+- getLocalTime() returns false after timeout
+- isoTimestamp() returns "1970-01-01T00:00:00Z"
+- Retry policy: call syncTime() again after 
+  reconnection
+- Alternative servers: time.nist.gov, 
+  time.google.com
+
+## ISO-8601 Format
+- Format: YYYY-MM-DDTHH:MM:SS
+- Example: 2026-06-06T19:30:00
+- Used in JSON payloads for cloud dashboard
