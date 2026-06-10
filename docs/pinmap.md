@@ -1,3 +1,0 @@
-DHT22 Data -> GPIO 4
-DHT22 Power -> 3.3V
-DHT22 GND -> GND
