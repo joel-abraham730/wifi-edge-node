@@ -1,11 +1,11 @@
 # Day 1 - WiFi Edge Node Board Selection
 
 ## Board chosen
-Board: DOIT ESP32 DEVKIT V1
-Chip: ESP32 WROOM-32D
-Chip Model: ESP32-D0WD-V3 rev 301
-Cores: 2
-Flash: 4194304 bytes
+- Board: DOIT ESP32 DEVKIT V1
+- Chip: ESP32 WROOM-32D
+- Chip Model: ESP32-D0WD-V3 rev 301
+- Cores: 2
+- Flash: 4194304 bytes
 
 ## Why ESP32 over ESP8266
 
