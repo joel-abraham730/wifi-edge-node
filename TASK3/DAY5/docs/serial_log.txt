@@ -1,0 +1,25 @@
+=== DHT22 Serial Log - Day 5 Task 3 ===
+
+Date: 2026-06-10
+
+--- Normal Readings ---
+
+{"temp_c":32.2,"humidity_pct":82.9,"valid":true}
+
+{"temp_c":32.3,"humidity_pct":82.9,"valid":true}
+
+{"temp_c":32.2,"humidity_pct":83.0,"valid":true}
+
+--- Breath Test Readings ---
+
+{"temp_c":31.9,"humidity_pct":84.2,"valid":true}
+
+{"temp_c":32,"humidity_pct":85.6,"valid":true}
+
+{"temp_c":31.9,"humidity_pct":84.8,"valid":true}
+
+--- Back to Normal ---
+
+{"temp_c":32.2,"humidity_pct":82.9,"valid":true}
+
+{"temp_c":32.3,"humidity_pct":83.0,"valid":true}
