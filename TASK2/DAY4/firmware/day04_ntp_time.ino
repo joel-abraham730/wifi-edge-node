@@ -37,7 +37,7 @@ String isoTimestamp() {
 
 void setup() {
   Serial.begin(115200);
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED) { delay(300); Serial.print('.'); }
   Serial.println(WiFi.localIP());
   syncTime();
