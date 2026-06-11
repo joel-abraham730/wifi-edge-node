@@ -19,5 +19,5 @@ at Zelbytes Agritech.
   with ArduinoOTA and deep sleep snippet
 
 ## Board
-DOIT ESP32 DEVKIT V1
-ESP32 WROOM-32D
+- DOIT ESP32 DEVKIT V1
+- ESP32 WROOM-32D
