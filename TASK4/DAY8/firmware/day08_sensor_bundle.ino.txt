@@ -1,0 +1,106 @@
+#include <ArduinoJson.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
+#include <DHT.h>
+#include "secrets.h"
+
+#define DHT_PIN 4
+#define DHT_TYPE DHT22
+DHT dht(DHT_PIN, DHT_TYPE);
+
+const char* API_BASE = "https://careers.zelbytes.com/api/iot-lab/v1";
+
+struct SensorBundle {
+  const char* nodeId;
+  const char* timestamp;
+  float tempC;
+  float humidityPct;
+  bool timeValid;
+  bool sensorValid;
+  const char* fwVersion;
+};
+
+String bundleToJson(const SensorBundle& b) {
+  StaticJsonDocument<384> doc;
+  doc["schema_version"] = 1;
+  doc["node_id"] = b.nodeId;
+  doc["ts"] = b.timestamp;
+  doc["fw"] = b.fwVersion;
+  JsonObject sensors = doc["sensors"].to<JsonObject>();
+  sensors["temp_c"] = b.tempC;
+  sensors["humidity_pct"] = b.humidityPct;
+  doc["time_valid"] = b.timeValid;
+  doc["sensor_valid"] = b.sensorValid;
+  String out;
+  serializeJson(doc, out);
+  return out;
+}
+
+bool validateBundle(const SensorBundle& b) {
+  if (b.nodeId == nullptr || b.timestamp == nullptr) return false;
+  if (isnan(b.tempC) || isnan(b.humidityPct)) return false;
+  if (!b.sensorValid) return false;
+  return true;
+}
+
+bool postBundle(const String& payload) {
+  if (WiFi.status() != WL_CONNECTED) return false;
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+  if (!http.begin(client, String(API_BASE) + "/telemetry")) return false;
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("X-Iot-Lab-Key", IOT_LAB_KEY);
+  int code = http.POST(payload);
+  String resp = http.getString();
+  http.end();
+  Serial.printf("IoT Lab HTTP %d: %s\n", code, resp.c_str());
+  return code == 202 || code == 200;
+}
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+  delay(2000);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED) delay(200);
+  Serial.println("WiFi connected");
+}
+
+void loop() {
+  float t = dht.readTemperature();
+  float h = dht.readHumidity();
+
+  SensorBundle bundle = {
+    "polyhouse-node-01",
+    "2026-06-11T00:00:00",
+    t, h,
+    true,
+    !isnan(t) && !isnan(h),
+    "1.0.0"
+  };
+
+  // Test invalid bundle rejection
+  SensorBundle invalidBundle = {
+    nullptr, nullptr, NAN, NAN, false, false, "1.0.0"
+  };
+  if (!validateBundle(invalidBundle)) {
+    Serial.println("Invalid bundle rejected!");
+  }
+
+  if (validateBundle(bundle)) {
+    String payload = bundleToJson(bundle);
+    Serial.println("Payload: " + payload);
+    Serial.printf("Payload size: %d bytes\n", payload.length());
+    
+    // Round-trip test
+    StaticJsonDocument<384> doc;
+    deserializeJson(doc, payload);
+    Serial.printf("Round-trip temp: %.1f\n", 
+      (float)doc["sensors"]["temp_c"]);
+    
+    postBundle(payload);
+  }
+  delay(60000);
+}

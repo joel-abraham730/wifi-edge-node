@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "node_id": "polyhouse-node-01",
+  "ts": "2026-06-11T00:00:00",
+  "fw": "1.0.0",
+  "sensors": {
+    "temp_c": 30.4,
+    "humidity_pct": 100.0
+  },
+  "time_valid": true,
+  "sensor_valid": true
+}
