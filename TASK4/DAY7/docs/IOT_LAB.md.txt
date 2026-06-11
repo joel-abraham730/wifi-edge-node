@@ -1,0 +1,18 @@
+# IoT Lab Field Mapping
+
+## Portal URL
+https://careers.zelbytes.com/api/iot-lab/v1
+
+## Field Mapping
+- device_id: "polyhouse-node-01"
+- temperature_c: DHT22 temperature in Celsius
+- humidity_pct: DHT22 humidity percentage
+
+## Authentication
+- Header: X-Iot-Lab-Key
+- Key stored in secrets.h only (never commit to Git)
+
+## Endpoints
+- POST /telemetry - Send sensor data
+- GET /telemetry/latest - Get latest reading
+- GET /telemetry/series - Get historical data
