@@ -1,0 +1,24 @@
+# Mosquitto Broker Configuration - Day 11
+
+## Broker Details
+- Broker: careers.zelbytes.com
+- Port: 1883
+- Topic: zelbytes/lab/92/telemetry
+- Node: 92
+
+## Mosquitto.conf (Minimal Lab Config)
+listener 1883
+allow_anonymous true
+persistence true
+persistence_location /var/lib/mosquitto/
+log_dest stdout
+
+## Firewall Notes
+- Using Zelbytes cloud broker
+- No local firewall changes needed
+- Port 1883 accessed via cloud platform
+
+## LAN Connectivity
+- Broker reachable at: careers.zelbytes.com
+- Verified via ping from MacBook Pro
+- ESP32 will connect using same broker address

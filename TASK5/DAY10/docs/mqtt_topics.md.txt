@@ -1,0 +1,23 @@
+# MQTT Topic Hierarchy
+
+## Zelbytes Polyhouse Fleet
+
+zelbytes/polyhouse/{node_id}/telemetry
+  → sensor JSON bundles (publish QoS 0)
+  
+zelbytes/polyhouse/{node_id}/command
+  → irrigation/config commands (subscribe QoS 1)
+  
+zelbytes/polyhouse/{node_id}/status
+  → online/offline LWT (retained)
+
+## Example Node IDs
+- zelbytes/polyhouse/node-01/telemetry
+- zelbytes/polyhouse/node-02/telemetry
+- zelbytes/polyhouse/node-03/telemetry
+
+## Rules
+- Topics are case-sensitive
+- Use lowercase node IDs
+- Never use leading # in publish topics
+- # is subscribe wildcard only

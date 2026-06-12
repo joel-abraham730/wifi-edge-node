@@ -1,0 +1,25 @@
+# MQTT Concepts
+
+## Broker vs Client
+- Broker: server that routes messages (Zelbytes IoT Lab)
+- Publisher: sends messages to a topic (ESP32)
+- Subscriber: receives messages from a topic (dashboard)
+- Topic: channel name like zelbytes/lab/92/telemetry
+
+## QoS Levels
+| Level | Name | Use Case |
+|-------|------|----------|
+| QoS 0 | At most once | Telemetry data |
+| QoS 1 | At least once | Commands |
+| QoS 2 | Exactly once | Critical alerts |
+
+## QoS 0 vs 1 for Polyhouse
+- Telemetry (temp/humidity): QoS 0 - loss ok
+- Irrigation commands: QoS 1 - must deliver
+
+## LWT (Last Will Testament)
+- Set when ESP32 connects to broker
+- If ESP32 goes offline unexpectedly broker 
+  publishes LWT message automatically
+- Use case: zelbytes/polyhouse/node-01/status 
+  publishes "offline" if node disconnects

@@ -17,6 +17,12 @@ at Zelbytes Agritech.
   and median filter
 - TASK3/DAY6 - OTA firmware updates 
   with ArduinoOTA and deep sleep snippet
+- TASK4/DAY7 - Zelbytes IoT Lab HTTPS telemetry with API key authentication
+- TASK4/DAY8 - JSON SensorBundle payload design with ArduinoJson serialize/deserialize
+- TASK5/DAY9 - Reading Zelbytes IoT Lab Latest and Series data via GET requests
+- TASK5/DAY10 - MQTT Protocol and Pub/Sub Mental Model with Zelbytes broker demo
+- TASK5/DAY11 - Mosquitto Local Broker Test and LAN connectivity verification
+- TASK5/DAY12 - ESP32 MQTT Publish sensor telemetry to Zelbytes IoT Lab
 
 ## Board
 - DOIT ESP32 DEVKIT V1

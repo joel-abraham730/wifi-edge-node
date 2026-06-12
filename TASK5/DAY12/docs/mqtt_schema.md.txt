@@ -1,0 +1,24 @@
+# MQTT Schema Documentation
+
+## Broker Details
+- Broker: careers.zelbytes.com
+- Port: 1883
+- Topic: zelbytes/lab/92/telemetry
+- Protocol: MQTT via HTTPS publish endpoint
+
+## Payload Format
+{
+  "temp_c": 31.7,
+  "humidity_pct": 79.5
+}
+
+## Connection Details
+- QoS: 0
+- Publish interval: 60 seconds minimum
+- Reconnect: automatic on disconnect
+- Packet size: 512 bytes max
+
+## Topic Hierarchy
+- zelbytes/lab/{node_id}/telemetry → sensor data
+- zelbytes/lab/{node_id}/command → commands
+- zelbytes/lab/{node_id}/status → online/offline

@@ -1,0 +1,20 @@
+# Polling vs MQTT Push
+
+## HTTP Polling
+- ESP32 calls GET /telemetry/latest every 30-60 seconds
+- Simple to implement
+- Higher latency (up to 60s delay)
+- Uses more battery (wake, connect, request, sleep)
+- Good for: dashboards, non-critical reads
+
+## MQTT Push
+- Broker pushes data instantly when available
+- Lower latency (milliseconds)
+- More efficient for battery
+- Good for: irrigation commands, alerts, real-time control
+
+## When to prefer MQTT over HTTP Poll
+- When you need instant command delivery
+- When battery life matters
+- When data changes faster than polling interval
+- For irrigation trigger commands (Day 13+)

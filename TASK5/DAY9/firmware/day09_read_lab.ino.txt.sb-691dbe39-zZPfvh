@@ -1,0 +1,66 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
+#include <ArduinoJson.h>
+#include "secrets.h"
+
+const char* API_BASE = "https://careers.zelbytes.com/api/iot-lab/v1";
+
+bool fetchLatest(float& tempC, float& humPct) {
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+  if (!http.begin(client, String(API_BASE) + "/telemetry/latest")) return false;
+  http.addHeader("X-Iot-Lab-Key", IOT_LAB_KEY);
+  int code = http.GET();
+  if (code != 200) { http.end(); return false; }
+  String payload = http.getString();
+  http.end();
+  StaticJsonDocument<512> doc;
+  if (deserializeJson(doc, payload)) return false;
+  tempC = doc["latest"]["temperature_c"].as<float>();
+  humPct = doc["latest"]["humidity_pct"].as<float>();
+  return true;
+}
+
+bool fetchSeries() {
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+  if (!http.begin(client, String(API_BASE) + 
+    "/telemetry/series?field=temperature_c&limit=24")) return false;
+  http.addHeader("X-Iot-Lab-Key", IOT_LAB_KEY);
+  int code = http.GET();
+  if (code != 200) { http.end(); return false; }
+  String payload = http.getString();
+  http.end();
+  StaticJsonDocument<2048> doc;
+  if (deserializeJson(doc, payload)) return false;
+  JsonArray labels = doc["labels"];
+  JsonArray values = doc["values"];
+  Serial.println("Series data:");
+  for (int i = 0; i < labels.size(); i++) {
+    Serial.printf("  %s: %.1f\n", 
+      labels[i].as<const char*>(), 
+      values[i].as<float>());
+  }
+  return true;
+}
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED) delay(200);
+  Serial.println("WiFi connected");
+}
+
+void loop() {
+  float t, h;
+  if (fetchLatest(t, h)) {
+    Serial.printf("Latest - temp: %.1f C, humidity: %.1f%%\n", t, h);
+  } else {
+    Serial.println("Failed to fetch latest");
+  }
+  fetchSeries();
+  delay(30000);
+}
