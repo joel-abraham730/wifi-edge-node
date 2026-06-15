@@ -23,6 +23,7 @@ at Zelbytes Agritech.
 - TASK5/DAY10 - MQTT Protocol and Pub/Sub Mental Model with Zelbytes broker demo
 - TASK5/DAY11 - Mosquitto Local Broker Test and LAN connectivity verification
 - TASK5/DAY12 - ESP32 MQTT Publish sensor telemetry to Zelbytes IoT Lab
+- TASK6/DAY13 - MQTT Subscribe and Remote Command handling with ACK
 
 ## Board
 - DOIT ESP32 DEVKIT V1

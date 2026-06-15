@@ -1,0 +1,42 @@
+# MQTT Command Schema
+
+## Command Topic
+zelbytes/lab/92/command
+
+## ACK Topic
+zelbytes/lab/92/command/ack
+
+## Whitelisted Commands
+
+| Command | Fields | Action |
+|---------|--------|--------|
+| IRRIGATE | command_id | Open irrigation valve |
+| STOP | command_id | Close irrigation valve |
+| set_interval | command_id, seconds | Update publish interval |
+| reboot | command_id | Restart ESP32 |
+
+## Command Format
+{
+  "cmd": "IRRIGATE",
+  "command_id": "cmd-001"
+}
+
+{
+  "cmd": "set_interval",
+  "command_id": "cmd-003",
+  "seconds": 30
+}
+
+## ACK Format
+{
+  "command_id": "cmd-001",
+  "status": "ok",
+  "msg": "valve opened"
+}
+
+## Safety Rules
+- Unknown commands rejected with status: error
+- Duplicate command_id ignored (idempotency table, last 10 commands)
+- Actuator control via relay only - serial log demo in lab
+- QoS 1 used for commands (delivery guaranteed)
+- QoS 0 used for telemetry (Day 12)
