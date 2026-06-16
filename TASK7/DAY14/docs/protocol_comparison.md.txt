@@ -1,0 +1,63 @@
+# Protocol Comparison Brief - HTTP vs MQTT vs CoAP
+
+## Decision Matrix
+
+| Criteria | HTTP/HTTPS | MQTT | CoAP |
+|----------|-----------|------|------|
+| Transport | TCP (port 443) | TCP (port 1883/8883) | UDP (port 5683) |
+| Model | Request/Response | Publish/Subscribe | REST-like + Observe |
+| Latency | High (TLS handshake each request) | Low (persistent connection) | Low (UDP, no handshake) |
+| Overhead per message | ~800-1200 bytes (TLS amortized) | ~150-200 bytes (keepalive) | ~180-250 bytes (no TCP state) |
+| Offline behavior | Request fails, must retry | Broker can queue (QoS 1/2) | No queueing, fire-and-forget |
+| Security | TLS built-in, widely supported | TLS optional (port 8883) | DTLS optional, less mature |
+| Power/Battery impact | High (new TCP+TLS each wake) | Medium (persistent connection) | Low (no connection state) |
+| Multi-subscriber | No (one request = one response) | Yes (broadcast to all subscribers) | Limited (multicast possible) |
+
+## Bytes Estimate for Our Actual Payload
+
+Our SensorBundle JSON: {"temp_c":31.7,"humidity_pct":79.5}
+Raw payload size: ~36 bytes
+
+- HTTPS POST (Day 7/8): ~800-1200 bytes total including TLS handshake overhead, 
+  since each ESP32 wake cycle establishes new TCP+TLS connection
+- MQTT publish (Day 12): ~150-200 bytes including TCP/IP framing, 
+  assuming persistent connection with 15s keepalive
+- CoAP (theoretical, Day 17): ~180-250 bytes for confirmable POST, 
+  no TCP state needed - good for deep sleep wake-publish-sleep cycle
+
+## Firewall Notes
+
+### Lab Environment
+- Port 443 (HTTPS) - open, used for Day 7-9 telemetry POST/GET
+- Port 1883 (MQTT) - open via Zelbytes cloud broker, verified Day 11
+- Port 5683 (CoAP/UDP) - not tested yet, planned for Day 17
+
+### Production Environment (Polyhouse)
+- Port 443 (HTTPS) - typically open on most networks, firewall-friendly
+- Port 1883 (MQTT plain) - often blocked by corporate/farm firewalls, 
+  recommend port 8883 (MQTT over TLS) for production
+- Port 5683 (CoAP/UDP) - frequently blocked by NAT/firewalls, 
+  requires careful router configuration
+
+## Recommendation per Node Tier
+
+### Mains-powered ESP32 (always-on nodes)
+Recommend: MQTT (QoS 0 telemetry, QoS 1 commands)
+- Persistent connection keeps overhead low
+- Real-time command delivery for irrigation control
+- Used in Days 12-13 for telemetry publish and command subscribe
+
+### Battery-powered sensor nodes (deep sleep)
+Recommend: CoAP or HTTPS, NOT MQTT
+- MQTT requires persistent connection - drains battery during sleep cycles
+- CoAP: no TCP handshake, ideal for wake-publish-sleep pattern (Day 17)
+- HTTPS: acceptable if wake interval is long (>10 min), 
+  TLS overhead amortized over infrequent wakes
+
+## Link to Day 15 (Zelbytes Platform Architecture)
+
+This protocol comparison feeds directly into Day 15's review of the 
+Zelbytes IoT Lab architecture. The lab currently exposes:
+- HTTPS REST endpoints (Day 7-9) - used for telemetry write/read
+- MQTT-style publish via HTTPS wrapper (Day 12-13) - simulates pub/sub
+  since direct MQTT TCP (port 1883) authentication was not accessible

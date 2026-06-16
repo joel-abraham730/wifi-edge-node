@@ -1,0 +1,33 @@
+# Migration Checklist - Lab Mosquitto to Production MQTTS
+
+## Step 1 - Update secrets.h
+- [ ] Change MQTT_BROKER from careers.zelbytes.com port 1883
+      to careers.zelbytes.com port 8883
+- [ ] Add DEVICE_TOKEN from careers portal device registration
+- [ ] Replace X-Iot-Lab-Key with per-device JWT token
+
+## Step 2 - Enable ZELBYTES_PLATFORM
+- [ ] Uncomment #define ZELBYTES_PLATFORM 1 in zelbytes_platform.h
+- [ ] Verify ZELBYTES_HTTP_URL points to production endpoint
+- [ ] Verify ZELBYTES_MQTT_PORT is 8883 (TLS)
+
+## Step 3 - TLS Configuration
+- [ ] Switch WiFiClient to WiFiClientSecure for MQTT
+- [ ] Add CA certificate for careers.zelbytes.com
+- [ ] Test connection on port 8883
+
+## Step 4 - Test in Staging
+- [ ] Verify HTTP POST returns 202 on production endpoint
+- [ ] Verify MQTT publish confirmed on production broker
+- [ ] Verify data appears on production dashboard
+
+## Step 5 - Firewall Check
+- [ ] Confirm port 8883 open on polyhouse LAN
+- [ ] Confirm port 443 open for HTTPS fallback
+- [ ] Document any NAT/router config needed
+
+## Key Differences Lab vs Production
+- Port 1883 (plain) → 8883 (TLS encrypted)
+- X-Iot-Lab-Key → per-device JWT token
+- Node number → registered device ID
+- Lab broker → production MQTTS cluster

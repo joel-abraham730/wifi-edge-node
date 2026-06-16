@@ -1,0 +1,33 @@
+# SensorBundle Field Mapping - Lab to Future API
+
+## Current Lab Schema (Day 8)
+{
+  "schema_version": 1,
+  "node_id": "92",
+  "ts": "2026-06-11T00:00:00",
+  "fw": "1.0.0",
+  "sensors": {
+    "temp_c": 31.7,
+    "humidity_pct": 79.5
+  },
+  "time_valid": true,
+  "sensor_valid": true
+}
+
+## Future Zelbytes API Field Mapping
+
+| SensorBundle Field | Future API Field | Notes |
+|-------------------|-----------------|-------|
+| schema_version | api_version | Version for compatibility |
+| node_id | device_id | From device registration UI |
+| ts | timestamp | ISO 8601 format |
+| fw | firmware_version | Semver format |
+| sensors.temp_c | temperature_c | Celsius |
+| sensors.humidity_pct | humidity_pct | Percentage |
+| time_valid | time_synced | NTP sync status |
+| sensor_valid | sensor_ok | DHT22 read status |
+
+## Authentication Model (Planned)
+- Per-device JWT token from careers.zelbytes.com device registration
+- Token passed as Authorization: Bearer header
+- Replaces current X-Iot-Lab-Key header

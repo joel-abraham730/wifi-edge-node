@@ -1,0 +1,72 @@
+# Zelbytes IoT Platform Architecture Preview
+
+## Platform Diagram
+
+[ESP32 Node]
+     |
+     | HTTPS POST (port 443) / MQTT (port 8883)
+     v
+[careers.zelbytes.com]
+     |
+     |-- /api/v1/iot/telemetry (HTTP ingest)
+     |-- mqtts://careers.zelbytes.com:8883 (MQTT broker)
+     |
+     v
+[Cloud Storage / Time-series DB]
+     |
+     v
+[Dashboard / Grafana / React]
+     |
+     v
+[Intern Laptop - Python/Streamlit]
+
+## Components
+- ESP32 edge nodes publish sensor data to Zelbytes cloud
+- Zelbytes cloud receives, stores, and serves the data
+- Dashboard reads data via GET /telemetry/latest and /series
+- MQTT broker routes pub/sub messages between devices and dashboards
+
+## Current Lab vs Future Production
+
+| Component | Lab (Now) | Production (Future) |
+|-----------|-----------|---------------------|
+| HTTP URL | careers.zelbytes.com/api/iot-lab/v1 | careers.zelbytes.com/api/v1/iot |
+| MQTT Host | careers.zelbytes.com port 1883 | careers.zelbytes.com port 8883 |
+| Auth | X-Iot-Lab-Key header | Per-device JWT or API token |
+| Device ID | Node number (92) | Device registration UI |
+| TLS | Optional (setInsecure) | Mandatory (CA certificate) |
+
+## Data Flow
+
+1. DHT22 sensor reads temperature and humidity every 60 seconds
+2. ESP32 packages data into SensorBundle JSON (Day 8 schema)
+3. ESP32 publishes to Zelbytes via HTTPS POST or MQTT publish
+4. Zelbytes cloud stores data in time-series database
+5. Dashboard reads latest and series data via REST API
+6. Intern laptop or Grafana visualizes the data in real time
+
+## Authentication Model
+
+### Current Lab
+- API key stored in secrets.h as IOT_LAB_KEY
+- Passed as X-Iot-Lab-Key header on every request
+- Same key for all lab nodes
+
+### Future Production (Planned)
+- Per-device JWT token from careers.zelbytes.com device registration UI
+- Passed as Authorization: Bearer header
+- Unique token per device for security
+- Token rotation supported
+
+## Planned Endpoints (Subject to Change)
+- POST https://careers.zelbytes.com/api/v1/iot/telemetry
+- GET https://careers.zelbytes.com/api/v1/iot/telemetry/latest
+- GET https://careers.zelbytes.com/api/v1/iot/telemetry/series
+- mqtts://careers.zelbytes.com:8883 (MQTT over TLS)
+
+## Monitor Portal Announcements
+Watch careers.zelbytes.com portal for updates on:
+- New endpoint launches
+- Device registration UI availability
+- JWT token generation process
+- Production MQTTS broker details
