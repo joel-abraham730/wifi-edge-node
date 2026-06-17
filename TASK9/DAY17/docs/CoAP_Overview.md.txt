@@ -1,0 +1,40 @@
+# CoAP Overview
+
+## Introduction
+
+The Constrained Application Protocol (CoAP) is a lightweight application-layer protocol designed for constrained IoT devices and low-bandwidth networks. CoAP operates over UDP and provides REST-like communication similar to HTTP.
+
+## Features of CoAP
+
+- Lightweight protocol for IoT devices
+- Uses UDP instead of TCP
+- Supports GET, POST, PUT, and DELETE methods
+- Suitable for battery-powered devices
+- Low communication overhead
+
+## CoAP Message Types
+
+### Confirmable (CON)
+
+A CON message requires an acknowledgment from the receiver. It is used when reliable delivery is important.
+
+### Non-Confirmable (NON)
+
+A NON message does not require acknowledgment and is suitable for non-critical sensor updates.
+
+### Observe (OBSERVE)
+
+OBSERVE allows clients to subscribe to a resource and automatically receive updates whenever the resource changes.
+
+## Resource Mapping Example
+
+| Resource | Method | Purpose |
+|----------|----------|---------|
+| /sensors/temp | GET | Read temperature |
+| /sensors/humidity | GET | Read humidity |
+| /actuator/fan | PUT | Control fan |
+| /status | GET | Device status |
+
+## Conclusion
+
+CoAP is a lightweight protocol that enables efficient communication between constrained IoT devices while minimizing power consumption.

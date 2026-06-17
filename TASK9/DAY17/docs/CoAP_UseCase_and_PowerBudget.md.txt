@@ -1,0 +1,30 @@
+# CoAP Use Case Matrix and Power Budget Comparison
+
+## Polyhouse Use Case Matrix
+
+| Device | Protocol | Reason |
+|----------|----------|---------|
+| Soil Moisture Sensor | CoAP | Low-power periodic updates |
+| Temperature Sensor | CoAP | Battery-operated deployment |
+| Humidity Sensor | CoAP | Small data packets |
+| Water Level Sensor | CoAP | Event-based communication |
+| Gateway Device | MQTT | Aggregates multiple devices |
+| Dashboard | MQTT | Centralized monitoring |
+
+## When Zelbytes Would Choose CoAP
+
+Zelbytes would prefer CoAP for remote battery-powered sensor clusters where devices periodically wake, send telemetry data, and return to deep sleep. CoAP reduces communication overhead and improves battery life.
+
+## MQTT vs CoAP Power Budget
+
+| Parameter | MQTT | CoAP |
+|------------|------|------|
+| Transport Protocol | TCP | UDP |
+| Connection Setup | Required | Not Required |
+| Wake Time | ~2.5 seconds | ~1 second |
+| Power Consumption | Higher | Lower |
+| Battery Life | Moderate | Longer |
+
+## Observation
+
+CoAP minimizes active communication time and therefore consumes less energy than MQTT for periodic telemetry applications.

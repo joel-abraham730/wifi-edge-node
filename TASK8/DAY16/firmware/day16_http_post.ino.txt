@@ -1,0 +1,57 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
+#include "secrets.h"
+
+const char* API_BASE = "https://careers.zelbytes.com/api/iot-lab/v1";
+
+bool postZelbytesTelemetry(const char* deviceId, float tempC, float humidityPct) {
+  if (WiFi.status() != WL_CONNECTED) return false;
+
+  WiFiClientSecure client;
+  client.setInsecure();  // Lab: use CA bundle in production
+
+  HTTPClient http;
+  if (!http.begin(client, String(API_BASE) + "/telemetry")) return false;
+
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("X-Iot-Lab-Key", IOT_LAB_KEY);
+
+  String body = "{\"device_id\":\"" + String(deviceId) + "\"" +
+                ",\"temperature_c\":" + String(tempC, 1) +
+                ",\"humidity_pct\":" + String(humidityPct, 1) + "}";
+
+  unsigned long startTime = millis();
+  int code = http.POST(body);
+  unsigned long endTime = millis();
+  unsigned long httpLatency = endTime - startTime;
+
+  String resp = http.getString();
+  http.end();
+
+  Serial.printf("IoT Lab HTTP %d: %s\n", code, resp.c_str());
+  Serial.printf("HTTP POST latency: %lu ms\n", httpLatency);
+
+  return code == 202 || code == 200;
+}
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi connected");
+}
+
+void loop() {
+  float tempC = 24.1;
+  float humidityPct = 68.2;
+
+  bool success = postZelbytesTelemetry("uno-bench-01", tempC, humidityPct);
+  Serial.println(success ? "Telemetry posted successfully" : "Telemetry post failed");
+
+  delay(60000);
+}

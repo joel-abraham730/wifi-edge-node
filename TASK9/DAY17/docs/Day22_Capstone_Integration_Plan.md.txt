@@ -1,0 +1,30 @@
+# Day 22 Deep Sleep Capstone Integration Plan
+
+## Objective
+
+Integrate CoAP communication into the Day 22 deep sleep workflow to reduce power consumption and extend battery life.
+
+## Workflow
+
+1. Wake from deep sleep.
+2. Read sensor values.
+3. Send telemetry using CoAP.
+4. Receive acknowledgment if required.
+5. Return to deep sleep.
+6. Repeat after the configured interval.
+
+## Benefits
+
+- Reduced power consumption
+- Lower communication overhead
+- Faster transmission
+- Longer battery life
+- Suitable for remote agricultural deployments
+
+## Example Application
+
+A soil moisture sensor deployed in a polyhouse wakes every 55 seconds, sends data using CoAP, and returns to deep sleep. This approach maximizes battery life while maintaining reliable monitoring.
+
+## Conclusion
+
+Combining CoAP with deep sleep enables efficient and low-power IoT deployments, making it suitable for battery-powered sensor networks.

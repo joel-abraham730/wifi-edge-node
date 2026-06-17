@@ -1,0 +1,36 @@
+# IoT Lab HTTP Integration — Day 16
+
+## Objective
+Send SensorBundle telemetry to the Zelbytes IoT Lab using HTTP POST instead of MQTT, and compare behavior/performance against the Day 12 MQTT-style publish approach.
+
+## API Details
+- Base URL: `https://careers.zelbytes.com/api/iot-lab/v1`
+- Endpoint: `/telemetry`
+- Device ID: `uno-bench-01`
+- Auth Header: `X-Iot-Lab-Key`
+
+## Request Format
+```json
+{
+  "device_id": "uno-bench-01",
+  "temperature_c": 24.1,
+  "humidity_pct": 68.2
+}
+```
+
+## Latency Comparison
+| Protocol | Endpoint | Latency (ms) |
+|---|---|---|
+| HTTP POST | /telemetry | 1593ms |
+| HTTP POST (MQTT-style bridge) | /mqtt/publish | 1163ms |
+
+**Note:** The Day 12 "MQTT" path is not native MQTT over port 1883 — it is also an HTTPS POST request to a `/mqtt/publish` bridge endpoint that republishes internally. Both measurements above are therefore HTTP request latencies to two different endpoints, not a comparison against a true MQTT client connection.
+
+## Error Handling Test
+- Used an incorrect `X-Iot-Lab-Key` value to trigger a `401 Unauthorized` response.
+- Confirmed error was logged via Serial Monitor and the main loop continued running without crashing.
+- Production code retries up to 3 times with backoff on transient 5xx errors.
+
+## Verification
+- curl POST from laptop succeeded with valid API key (`"status":"accepted"`).
+- ESP32 POST returned `202`, confirmed visible on IoT Lab → Dashboards.

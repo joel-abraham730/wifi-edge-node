@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Zelbytes SensorBundle Payload Schema",
+  "version": 1,
+  "description": "Schema for sensor telemetry sent via both HTTPS POST and MQTT publish to Zelbytes IoT Lab",
+  "type": "object",
+  "properties": {
+    "device_id": {
+      "type": "string",
+      "description": "Unique identifier for the sensor node",
+      "example": "uno-bench-01"
+    },
+    "temperature_c": {
+      "type": "number",
+      "description": "Temperature reading in Celsius",
+      "example": 24.1
+    },
+    "humidity_pct": {
+      "type": "number",
+      "description": "Relative humidity percentage",
+      "example": 68.2
+    }
+  },
+  "required": ["device_id", "temperature_c", "humidity_pct"],
+  "transports": {
+    "https": {
+      "endpoint": "/api/iot-lab/v1/telemetry",
+      "method": "POST",
+      "body_format": "JSON object matching schema directly"
+    },
+    "mqtt": {
+      "endpoint": "/api/iot-lab/v1/mqtt/publish",
+      "topic": "zelbytes/lab/92/telemetry",
+      "body_format": "JSON object with 'topic' and 'payload' fields, where 'payload' is a stringified JSON matching this schema"
+    }
+  },
