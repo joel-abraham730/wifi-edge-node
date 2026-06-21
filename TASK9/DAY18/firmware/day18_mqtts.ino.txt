@@ -1,0 +1,41 @@
+// src/day18_mqtts.ino
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
+#include "secrets.h"
+
+const char* ROOT_CA = \
+"-----BEGIN CERTIFICATE-----\n"
+"-----END CERTIFICATE-----\n";
+
+bool postWithTLS(float t, float h) {
+  WiFiClientSecure client;
+  // Production mode - using actual CA certificate
+  client.setCACert(ROOT_CA);
+  
+  HTTPClient http;
+  if (!http.begin(client, "https://careers.zelbytes.com/api/iot-lab/v1/telemetry")) return false;
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("X-Iot-Lab-Key", IOT_LAB_KEY);
+  
+  String body = "{\"device_id\":\"polyhouse-node-01\","
+    "\"temperature_c\":" + String(t, 1) +
+    ",\"humidity_pct\":" + String(h, 1) + "}";
+  
+  int code = http.POST(body);
+  String resp = http.getString();
+  http.end();
+  Serial.printf("TLS HTTPS %d: %s\n", code, resp.c_str());
+  return code == 200 || code == 202;
+}
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED) delay(200);
+  Serial.println("WiFi connected");
+  Serial.println("Testing TLS HTTPS POST (production mode - no setInsecure)...");
+  postWithTLS(31.7, 79.5);
+}
+
+void loop() {}

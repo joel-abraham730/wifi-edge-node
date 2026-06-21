@@ -1,0 +1,37 @@
+# IoT Threat Model - Polyhouse Deployment (STRIDE-lite)
+
+## Threat 1: Rogue Access Point (Spoofing)
+- Threat: Attacker creates fake WiFi with same SSID
+- Impact: ESP32 connects to malicious AP, data stolen
+- Mitigation: Use WPA2-Enterprise on farm network,
+  validate server certificate (remove setInsecure())
+
+## Threat 2: MQTT Credential Theft (Information Disclosure)
+- Threat: Plain MQTT port 1883 transmits credentials unencrypted
+- Impact: API key captured on network, attacker publishes fake data
+- Mitigation: Use MQTTS port 8883 with TLS,
+  separate credentials per node
+
+## Threat 3: OTA Firmware Tampering (Tampering)
+- Threat: Unsigned OTA firmware uploaded to ESP32
+- Impact: Malicious code controls irrigation valve
+- Mitigation: OTA password enforced (zelbytes-lab-ota),
+  document unsigned image risk in ota_policy.md
+
+## Threat 4: API Key Exposure in Git (Information Disclosure)
+- Threat: secrets.h committed to public GitHub repo
+- Impact: Attacker uses key to post fake telemetry or exhaust quota
+- Mitigation: secrets.h in .gitignore, only secrets.template.h
+  committed, rotate key immediately if exposed
+
+## Threat 5: Sensor Data Injection (Tampering)
+- Threat: Attacker POSTs fake temperature/humidity data
+- Impact: Irrigation triggered incorrectly, crop damage
+- Mitigation: Per-device JWT tokens (planned),
+  validate sensor_valid flag before acting on data
+
+## Threat 6: Replay Attack (Elevation of Privilege)
+- Threat: Attacker captures and replays IRRIGATE command
+- Impact: Valve opened repeatedly, flooding polyhouse
+- Mitigation: command_id idempotency table (Day 13),
+  timestamp validation on commands

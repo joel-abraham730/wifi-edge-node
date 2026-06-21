@@ -1,0 +1,47 @@
+# Field Deployment Checklist - Polyhouse Edge Node
+
+## Pre-Flight Firmware Checks
+- [ ] 1. Firmware version confirmed (day20_soak_metrics.ino)
+- [ ] 2. secrets.h updated with correct WiFi credentials
+- [ ] 3. Node ID matches MQTT topic (NODE_ID = 92)
+- [ ] 4. API key valid - HTTP 202 confirmed on test POST
+- [ ] 5. OTA password set (zelbytes-lab-ota)
+- [ ] 6. setInsecure() removed from production builds
+- [ ] 7. Serial debug disabled (#ifdef DEBUG)
+
+## WiFi & Network Checks
+- [ ] 8. WiFi RSSI > -70 dBm at install location
+- [ ] 9. IP address assigned correctly
+- [ ] 10. MQTT broker reachable (ping careers.zelbytes.com)
+- [ ] 11. Port 1883 open on farm network
+- [ ] 12. Port 443 open for HTTPS fallback
+
+## Sensor & Hardware Checks
+- [ ] 13. DHT22 reads valid temp and humidity (not NaN)
+- [ ] 14. DHT22 wired with pull-up resistor
+- [ ] 15. 3.3V power only on DHT22 data pin
+- [ ] 16. Jumper wires secured with strain relief
+- [ ] 17. Node ID labeled on enclosure lid
+
+## Physical Installation
+- [ ] 18. Enclosure IP rating suitable for mist environment
+- [ ] 19. Cable strain relief applied at entry points
+- [ ] 20. Lightning/ESD grounding connected
+- [ ] 21. DHT22 positioned away from direct water spray
+- [ ] 22. Enclosure mounted at correct height on scaffolding
+
+## MQTT & Cloud Checks
+- [ ] 23. Telemetry visible in Zelbytes IoT Lab dashboard
+- [ ] 24. MQTT LWT status topic shows online correctly
+- [ ] 25. MQTT reconnect working after WiFi drop
+
+## Soak Test
+- [ ] 26. 4h soak test completed with 0 DHT failures
+- [ ] 27. HTTP failure rate < 5%
+- [ ] 28. MQTT reconnect count documented
+- [ ] 29. Min RSSI recorded during soak test
+
+## Post Installation
+- [ ] 30. Serial log photo taken before sealing enclosure
+- [ ] 31. Maintenance schedule documented
+- [ ] 32. Rollback runbook reviewed by mentor

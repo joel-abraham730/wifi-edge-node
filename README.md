@@ -26,7 +26,12 @@ at Zelbytes Agritech.
 - TASK6/DAY13 - MQTT Subscribe and Remote Command handling with ACK
 - TASK7/DAY14 - HTTP REST vs MQTT vs CoAP protocol comparison brief
 - TASK7/DAY15 - Zelbytes IoT Platform Architecture Preview and migration planning
-- TASK8/DAY16 - HTTPS POST SensorBundle telemetry to Zelbytes IoT Lab with API key authentication, HTTP response handling, error testing (403), dashboard verification, and HTTPS vs MQTT latency comparison
+- TASK8/DAY16 - HTTPS POST SensorBundle telemetry to Zelbytes IoT Lab with API key
+ authentication, HTTP response handling, error testing (403), dashboard verification, and HTTPS vs MQTT latency comparison
+- TASK9/DAY17 - CoAP Protocol and deep sleep power comparison
+- TASK9/DAY18 - TLS/WiFi Security Basics and threat model
+- TASK9/DAY19 - Edge Node Configuration Management with NVS
+- TASK9/DAY20 - Field Deployment Package and Soak Test
 
 
 ## Board

@@ -1,0 +1,45 @@
+# Deployment Guide - Polyhouse Edge Node
+
+## Flash Steps
+1. Install Arduino IDE with ESP32 board support
+2. Install libraries: Preferences (built-in), WiFi (built-in)
+3. Copy secrets.template.h to secrets.h
+4. Fill in WiFi credentials and API key in secrets.h
+5. Select board: ESP32 Dev Module
+6. Select port: /dev/cu.usbserial-XXXX
+7. Click Upload
+
+## WiFi Provisioning
+### First Boot
+- ESP32 saves default config from secrets.h to NVS
+- Config version set to 1
+- WiFi connects using saved credentials
+
+### Changing WiFi
+- Use set_interval command via serial monitor
+- Or factory reset and reflash with new secrets.h
+
+## Factory Reset
+1. Open Serial Monitor at 115200 baud
+2. Type: factory_reset
+3. Press Enter
+4. ESP32 clears NVS and restarts
+5. First boot saves new default config
+
+## Rollback Procedure
+1. If new firmware fails to connect:
+   - Hold BOOT button and press EN to enter download mode
+   - Flash previous firmware version via USB
+   - Config in NVS is preserved during reflash
+
+## OTA Update
+1. Ensure OTA password matches (zelbytes-lab-ota)
+2. Open Arduino IDE
+3. Select Network Port (polyhouse-node-01)
+4. Click Upload
+5. Config in NVS survives OTA update
+
+## Field Debugging
+- Type dump_config in serial monitor
+- Shows all non-secret config fields
+- Never shows wifi_pass or IOT_LAB_KEY

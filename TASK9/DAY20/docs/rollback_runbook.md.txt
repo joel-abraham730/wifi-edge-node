@@ -1,0 +1,54 @@
+# Rollback Runbook - Polyhouse Edge Node
+
+## Scenario 1: Node stops publishing telemetry
+
+### Step 1 - Check serial monitor
+- Connect USB cable to node
+- Open Serial Monitor at 115200 baud
+- Look for error messages (DHT fail, HTTP fail, WiFi disconnect)
+
+### Step 2 - Check WiFi
+- Verify RSSI > -70 dBm
+- If RSSI too low, move node closer to router
+- Type dump_config to verify WiFi SSID is correct
+
+### Step 3 - Factory reset NVS
+- Type factory_reset in serial monitor
+- Node restarts and saves fresh config
+- Verify HTTP 202 on first POST
+
+### Step 4 - USB reflash
+- Connect USB cable
+- Open Arduino IDE
+- Select ESP32 Dev Module and correct port
+- Hold BOOT button and click Upload
+- Release BOOT when upload starts
+
+### Step 5 - OTA rollback
+- In Arduino IDE go to Tools → Port
+- Select network port (polyhouse-node-01)
+- Open previous firmware version
+- Click Upload via OTA
+
+## Scenario 2: Wrong firmware flashed
+
+### Immediate rollback
+- ESP32 has two OTA partitions
+- If new firmware fails boot check
+- Previous firmware boots automatically from backup partition
+
+## Scenario 3: API key expired or rotated
+
+### Key rotation steps
+1. Go to careers.zelbytes.com → My Instance
+2. Click Regenerate API Key
+3. Copy new key
+4. Update secrets.h
+5. Reflash via USB or OTA
+6. Verify HTTP 202 on first POST
+
+## Maintenance Schedule
+- Weekly: Check RSSI and telemetry on dashboard
+- Monthly: Verify OTA password still works
+- Every 90 days: Rotate API key
+- Every 6 months: Check enclosure seal and cable strain relief

@@ -1,0 +1,26 @@
+# WiFi RSSI Survey - Polyhouse Node 92
+
+## Survey Results
+
+| Location | RSSI (dBm) | Signal Quality | Recommendation |
+|----------|-----------|----------------|----------------|
+| Install height | -54 dBm | Good | Acceptable |
+| During soak test | -49 to -66 dBm | Good to Fair | Acceptable |
+| Minimum recorded | -66 dBm | Fair | Monitor |
+
+## Signal Quality Guide
+- > -50 dBm: Excellent
+- -50 to -60 dBm: Good
+- -60 to -70 dBm: Fair (acceptable)
+- < -70 dBm: Poor (move node or add repeater)
+
+## Recommendations
+- Current install location signal is acceptable
+- Keep node within 5m of WiFi router
+- Avoid metal scaffolding between node and router
+- Monitor RSSI in soak test logs regularly
+
+## Firewall Notes
+- Port 443 (HTTPS) open - verified Day 7-16
+- Port 1883 (MQTT) open via Zelbytes cloud
+- Port 8883 (MQTTS) tested Day 18

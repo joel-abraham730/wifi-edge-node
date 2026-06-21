@@ -1,0 +1,107 @@
+// src/day20_soak_metrics.ino
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
+#include <DHT.h>
+#include "secrets.h"
+
+#define DHT_PIN 4
+#define DHT_TYPE DHT22
+DHT dht(DHT_PIN, DHT_TYPE);
+
+struct SoakMetrics {
+  uint32_t mqttReconnects;
+  uint32_t dhtFailures;
+  uint32_t httpFailures;
+  int8_t minRssi;
+  uint32_t uptimeSec;
+};
+
+SoakMetrics metrics = {0, 0, 0, 0, 0};
+unsigned long lastPost = 0;
+unsigned long lastSummary = 0;
+unsigned long startTime = 0;
+
+void logHourlySummary(const SoakMetrics& m) {
+  Serial.printf(
+    "SOAK {\"uptime_h\":%.1f,\"mqtt_reconn\":%u,\"dht_fail\":%u,"
+    "\"http_fail\":%u,\"min_rssi\":%d}\n",
+    m.uptimeSec / 3600.0f, m.mqttReconnects, m.dhtFailures,
+    m.httpFailures, m.minRssi);
+}
+
+bool postTelemetry(float t, float h) {
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+  if (!http.begin(client,
+    "https://careers.zelbytes.com/api/iot-lab/v1/telemetry")) {
+    metrics.httpFailures++;
+    return false;
+  }
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("X-Iot-Lab-Key", IOT_LAB_KEY);
+  String body = "{\"device_id\":\"polyhouse-node-01\","
+    "\"temperature_c\":" + String(t, 1) +
+    ",\"humidity_pct\":" + String(h, 1) + "}";
+  int code = http.POST(body);
+  http.end();
+  if (code != 202 && code != 200) {
+    metrics.httpFailures++;
+    return false;
+  }
+  return true;
+}
+
+void checkRssi() {
+  int8_t rssi = (int8_t)WiFi.RSSI();
+  if (rssi < metrics.minRssi) metrics.minRssi = rssi;
+  Serial.printf("WiFi RSSI: %d dBm\n", rssi);
+}
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+  delay(2000);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED) delay(200);
+  Serial.println("WiFi connected");
+  Serial.printf("IP: %s\n", WiFi.localIP().toString().c_str());
+  metrics.minRssi = (int8_t)WiFi.RSSI();
+  startTime = millis();
+  Serial.println("=== Soak Test Started ===");
+  Serial.printf("Node ID: %s\n", NODE_ID);
+  Serial.printf("MQTT Host: %s\n", MQTT_BROKER);
+  checkRssi();
+}
+
+void loop() {
+  metrics.uptimeSec = (millis() - startTime) / 1000;
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi disconnected - reconnecting...");
+    metrics.mqttReconnects++;
+    WiFi.reconnect();
+    delay(5000);
+    return;
+  }
+
+  if (millis() - lastPost > 10000) {
+    lastPost = millis();
+    float t = dht.readTemperature();
+    float h = dht.readHumidity();
+    if (isnan(t) || isnan(h)) {
+      metrics.dhtFailures++;
+      Serial.println("DHT read failed!");
+    } else {
+      Serial.printf("Temp: %.1f C, Humidity: %.1f%%\n", t, h);
+      checkRssi();
+      postTelemetry(t, h);
+    }
+  }
+
+  if (millis() - lastSummary > 25000) {
+    lastSummary = millis();
+    logHourlySummary(metrics);
+  }
+}

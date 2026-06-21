@@ -1,0 +1,117 @@
+// src/day19_config.ino
+#include <Preferences.h>
+#include <WiFi.h>
+#include "secrets.h"
+
+Preferences prefs;
+
+struct NodeConfig {
+  char wifiSsid[32];
+  char wifiPass[64];
+  char mqttHost[64];
+  char nodeId[16];
+  uint32_t sampleIntervalSec;
+  uint8_t configVersion;
+};
+
+void loadConfig(NodeConfig& cfg) {
+  prefs.begin("polyhouse", true);
+  cfg.configVersion = prefs.getUChar("cfg_ver", 0);
+  prefs.getString("wifi_ssid", cfg.wifiSsid, sizeof(cfg.wifiSsid));
+  prefs.getString("wifi_pass", cfg.wifiPass, sizeof(cfg.wifiPass));
+  prefs.getString("mqtt_host", cfg.mqttHost, sizeof(cfg.mqttHost));
+  prefs.getString("node_id", cfg.nodeId, sizeof(cfg.nodeId));
+  cfg.sampleIntervalSec = prefs.getUInt("interval", 60);
+  prefs.end();
+}
+
+void saveConfig(const NodeConfig& cfg) {
+  prefs.begin("polyhouse", false);
+  prefs.putUChar("cfg_ver", cfg.configVersion);
+  prefs.putString("wifi_ssid", cfg.wifiSsid);
+  prefs.putString("wifi_pass", cfg.wifiPass);
+  prefs.putString("mqtt_host", cfg.mqttHost);
+  prefs.putString("node_id", cfg.nodeId);
+  prefs.putUInt("interval", cfg.sampleIntervalSec);
+  prefs.end();
+}
+
+void factoryReset() {
+  prefs.begin("polyhouse", false);
+  prefs.clear();
+  prefs.end();
+  Serial.println("Factory reset done! Entering provisioning mode...");
+  Serial.println("Config cleared - restarting...");
+  delay(1000);
+  ESP.restart();
+}
+
+void dumpConfig(const NodeConfig& cfg) {
+  Serial.println("=== dump_config ===");
+  Serial.printf("config_version: %d\n", cfg.configVersion);
+  Serial.printf("wifi_ssid: %s\n", cfg.wifiSsid);
+  Serial.println("wifi_pass: [REDACTED]");
+  Serial.printf("mqtt_host: %s\n", cfg.mqttHost);
+  Serial.printf("node_id: %s\n", cfg.nodeId);
+  Serial.printf("sample_interval_sec: %d\n", cfg.sampleIntervalSec);
+  Serial.println("===================");
+}
+
+void setIntervalCommand(NodeConfig& cfg, uint32_t sec) {
+  cfg.sampleIntervalSec = sec;
+  saveConfig(cfg);
+  Serial.printf("Interval updated to %d s and saved to NVS\n", sec);
+}
+
+NodeConfig cfg;
+
+void setup() {
+  Serial.begin(115200);
+  delay(2000);
+
+  // Load config from NVS
+  loadConfig(cfg);
+
+  // First boot - save default config
+  if (cfg.configVersion == 0) {
+    Serial.println("First boot - saving default config to NVS...");
+    strncpy(cfg.wifiSsid, WIFI_SSID, sizeof(cfg.wifiSsid));
+    strncpy(cfg.wifiPass, WIFI_PASSWORD, sizeof(cfg.wifiPass));
+    strncpy(cfg.mqttHost, MQTT_BROKER, sizeof(cfg.mqttHost));
+    strncpy(cfg.nodeId, NODE_ID, sizeof(cfg.nodeId));
+    cfg.sampleIntervalSec = 60;
+    cfg.configVersion = 1;
+    saveConfig(cfg);
+    Serial.println("Default config saved!");
+  } else {
+    Serial.printf("Config loaded from NVS (version %d)\n", cfg.configVersion);
+  }
+
+  // Dump config
+  dumpConfig(cfg);
+
+  // Connect WiFi using NVS config
+  Serial.printf("Connecting to WiFi: %s\n", cfg.wifiSsid);
+  WiFi.begin(cfg.wifiSsid, cfg.wifiPass);
+  while (WiFi.status() != WL_CONNECTED) delay(200);
+  Serial.println("WiFi connected using NVS config!");
+}
+
+void loop() {
+  if (Serial.available()) {
+    String cmd = Serial.readStringUntil('\n');
+    cmd.trim();
+
+    if (cmd == "dump_config") {
+      dumpConfig(cfg);
+    } else if (cmd == "factory_reset") {
+      factoryReset();
+    } else if (cmd.startsWith("set_interval:")) {
+      uint32_t sec = cmd.substring(13).toInt();
+      setIntervalCommand(cfg, sec);
+    } else {
+      Serial.println("Unknown command");
+      Serial.println("Commands: dump_config, factory_reset, set_interval:XX");
+    }
+  }
+}

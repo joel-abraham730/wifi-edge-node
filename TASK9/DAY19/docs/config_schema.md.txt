@@ -1,0 +1,30 @@
+# Node Configuration Schema
+
+## NVS Namespace: polyhouse
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| cfg_ver | uint8 | 0 | Config schema version |
+| wifi_ssid | string | "" | WiFi network name |
+| wifi_pass | string | "" | WiFi password (never logged) |
+| mqtt_host | string | "" | MQTT broker hostname |
+| node_id | string | "" | Node identifier |
+| interval | uint32 | 60 | Sample interval in seconds |
+
+## Config Version History
+- Version 0: Factory default (no config saved)
+- Version 1: Initial config with WiFi/MQTT/node_id/interval
+
+## Security Notes
+- wifi_pass never printed to serial (REDACTED in dump_config)
+- IOT_LAB_KEY not stored in NVS (loaded from secrets.h)
+- Factory reset clears ALL NVS keys including credentials
+
+## USB Export Format (JSON)
+{
+  "config_version": 1,
+  "wifi_ssid": "your_wifi_ssid",
+  "mqtt_host": "careers.zelbytes.com",
+  "node_id": "92",
+  "sample_interval_sec": 60
+}
