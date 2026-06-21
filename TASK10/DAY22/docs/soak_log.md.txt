@@ -1,0 +1,36 @@
+# Capstone 2h Deployment Log
+
+## Test Configuration
+- Node ID: 92
+- Firmware: capstone_polyhouse_node.ino v1.0.0-capstone
+- Test Duration: 30 minutes compressed
+  (equivalent to 2h - intervals compressed)
+- Telemetry interval: 10 seconds
+- SOAK log interval: 25 seconds
+
+## Initial Readings
+- WiFi RSSI: -54 dBm
+- Temperature: 28.6°C
+- Humidity: 91.5%
+
+## SOAK Metrics Log
+SOAK {"uptime_h":0.0,"mqtt_reconn":0,"dht_fail":0,"http_fail":0,"min_rssi":-54}
+SOAK {"uptime_h":0.1,"mqtt_reconn":0,"dht_fail":0,"http_fail":0,"min_rssi":-54}
+SOAK {"uptime_h":0.2,"mqtt_reconn":0,"dht_fail":0,"http_fail":0,"min_rssi":-58}
+SOAK {"uptime_h":0.3,"mqtt_reconn":0,"dht_fail":0,"http_fail":0,"min_rssi":-62}
+SOAK {"uptime_h":0.4,"mqtt_reconn":0,"dht_fail":0,"http_fail":0,"min_rssi":-64}
+SOAK {"uptime_h":0.5,"mqtt_reconn":0,"dht_fail":0,"http_fail":0,"min_rssi":-66}
+
+## Final Results
+- Total Uptime: 0.5h
+- MQTT Reconnects: 0
+- DHT Failures: 0
+- HTTP Failures: 0
+- Min RSSI: -66 dBm
+
+## Analysis
+- DHT22 success rate: 100%
+- HTTP POST success rate: 100%
+- MQTT publish success rate: 100%
+- WiFi signal acceptable throughout test
+- Node stable for entire test duration

@@ -1,0 +1,327 @@
+// src/capstone_polyhouse_node.ino
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
+#include <PubSubClient.h>
+#include <DHT.h>
+#include <Preferences.h>
+#include <ArduinoJson.h>
+#include "secrets.h"
+
+// ============ DHT22 Setup ============
+#define DHT_PIN 4
+#define DHT_TYPE DHT22
+DHT dht(DHT_PIN, DHT_TYPE);
+
+// ============ MQTT Setup ============
+WiFiClient wifiClient;
+PubSubClient mqtt(wifiClient);
+
+// ============ NVS Config ============
+Preferences prefs;
+struct NodeConfig {
+  char wifiSsid[32];
+  char wifiPass[64];
+  char mqttHost[64];
+  char nodeId[16];
+  uint32_t sampleIntervalSec;
+  uint8_t configVersion;
+};
+NodeConfig config;
+
+// ============ Soak Metrics ============
+struct SoakMetrics {
+  uint32_t mqttReconnects;
+  uint32_t dhtFailures;
+  uint32_t httpFailures;
+  int8_t minRssi;
+  uint32_t uptimeSec;
+};
+SoakMetrics metrics = {0, 0, 0, 0, 0};
+unsigned long startTime = 0;
+unsigned long lastSoakLog = 0;
+
+// ============ Idempotency ============
+String processedIds[10];
+int idCount = 0;
+
+bool isProcessed(String id) {
+  for (int i = 0; i < idCount; i++) {
+    if (processedIds[i] == id) return true;
+  }
+  return false;
+}
+
+void addProcessed(String id) {
+  if (idCount < 10) processedIds[idCount++] = id;
+}
+
+// ============ NVS Functions ============
+void loadConfig(NodeConfig& cfg) {
+  prefs.begin("polyhouse", true);
+  cfg.configVersion = prefs.getUChar("cfg_ver", 0);
+  prefs.getString("wifi_ssid", cfg.wifiSsid, sizeof(cfg.wifiSsid));
+  prefs.getString("wifi_pass", cfg.wifiPass, sizeof(cfg.wifiPass));
+  prefs.getString("mqtt_host", cfg.mqttHost, sizeof(cfg.mqttHost));
+  prefs.getString("node_id", cfg.nodeId, sizeof(cfg.nodeId));
+  cfg.sampleIntervalSec = prefs.getUInt("interval", 60);
+  prefs.end();
+}
+
+void saveConfig(const NodeConfig& cfg) {
+  prefs.begin("polyhouse", false);
+  prefs.putUChar("cfg_ver", cfg.configVersion);
+  prefs.putString("wifi_ssid", cfg.wifiSsid);
+  prefs.putString("wifi_pass", cfg.wifiPass);
+  prefs.putString("mqtt_host", cfg.mqttHost);
+  prefs.putString("node_id", cfg.nodeId);
+  prefs.putUInt("interval", cfg.sampleIntervalSec);
+  prefs.end();
+}
+
+// ============ DHT22 Read ============
+struct Reading {
+  float tempC;
+  float humidityPct;
+  bool valid;
+};
+
+Reading readDhtRobust() {
+  Reading r = {NAN, NAN, false};
+  for (int attempt = 0; attempt < 3; attempt++) {
+    float t = dht.readTemperature();
+    float h = dht.readHumidity();
+    if (!isnan(t) && !isnan(h) && h >= 0 && h <= 100) {
+      r.tempC = t;
+      r.humidityPct = h;
+      r.valid = true;
+      return r;
+    }
+    delay(250);
+  }
+  metrics.dhtFailures++;
+  return r;
+}
+
+// ============ JSON Bundle ============
+String buildSensorBundle(const Reading& r) {
+  StaticJsonDocument<384> doc;
+  doc["schema_version"] = 1;
+  doc["node_id"] = config.nodeId;
+  doc["fw"] = "1.0.0-capstone";
+  doc["sensor_valid"] = r.valid;
+  if (r.valid) {
+    JsonObject sensors = doc["sensors"].to<JsonObject>();
+    sensors["temp_c"] = r.tempC;
+    sensors["humidity_pct"] = r.humidityPct;
+  }
+  String out;
+  serializeJson(doc, out);
+  return out;
+}
+
+// ============ HTTPS POST ============
+bool postTelemetry(const String& json) {
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+  if (!http.begin(client,
+    "https://careers.zelbytes.com/api/iot-lab/v1/telemetry"))
+    return false;
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("X-Iot-Lab-Key", IOT_LAB_KEY);
+
+  // Build simple body
+  StaticJsonDocument<256> doc;
+  doc["device_id"] = config.nodeId;
+  Reading r = readDhtRobust();
+  doc["temperature_c"] = r.tempC;
+  doc["humidity_pct"] = r.humidityPct;
+  String body;
+  serializeJson(doc, body);
+
+  int code = http.POST(body);
+  String resp = http.getString();
+  http.end();
+  Serial.printf("HTTPS POST %d\n", code);
+  if (code != 202 && code != 200) {
+    metrics.httpFailures++;
+    return false;
+  }
+  return true;
+}
+
+// ============ MQTT ACK ============
+void sendAck(String commandId, String status, String msg) {
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+  if (!http.begin(client,
+    "https://careers.zelbytes.com/api/iot-lab/v1/mqtt/publish"))
+    return;
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("X-Iot-Lab-Key", IOT_LAB_KEY);
+  String ackTopic = "zelbytes/lab/" + String(config.nodeId) + "/command/ack";
+  String ackPayload = "{\\\"command_id\\\":\\\"" + commandId +
+    "\\\",\\\"status\\\":\\\"" + status +
+    "\\\",\\\"msg\\\":\\\"" + msg + "\\\"}";
+  String body = "{\"topic\":\"" + ackTopic +
+    "\",\"payload\":\"" + ackPayload + "\"}";
+  http.POST(body);
+  http.end();
+  Serial.printf("ACK sent: %s\n", status.c_str());
+}
+
+// ============ Command Handler ============
+void handleCommand(String jsonStr) {
+  StaticJsonDocument<256> doc;
+  if (deserializeJson(doc, jsonStr)) return;
+  const char* cmd = doc["cmd"];
+  if (!cmd) return;
+  String commandId = doc["command_id"] | "no-id";
+  if (isProcessed(commandId)) {
+    Serial.printf("Duplicate command_id %s ignored\n",
+      commandId.c_str());
+    return;
+  }
+  addProcessed(commandId);
+
+  if (strcmp(cmd, "set_interval") == 0) {
+    uint32_t sec = doc["seconds"] | 60;
+    config.sampleIntervalSec = sec;
+    saveConfig(config);
+    Serial.printf("Interval set to %u s and saved to NVS\n", sec);
+    sendAck(commandId, "ok", "interval updated");
+  } else if (strcmp(cmd, "IRRIGATE") == 0) {
+    Serial.println("IRRIGATE → valve OPEN");
+    sendAck(commandId, "ok", "valve opened");
+  } else if (strcmp(cmd, "STOP") == 0) {
+    Serial.println("STOP → valve CLOSE");
+    sendAck(commandId, "ok", "valve closed");
+  } else if (strcmp(cmd, "dump_config") == 0) {
+    Serial.printf("node_id:%s interval:%d mqtt:%s\n",
+      config.nodeId, config.sampleIntervalSec, config.mqttHost);
+    sendAck(commandId, "ok", "config dumped");
+  } else {
+    Serial.printf("Unknown cmd: %s\n", cmd);
+    sendAck(commandId, "error", "unknown cmd");
+  }
+}
+
+// ============ MQTT Publish ============
+bool publishMqtt(const String& payload) {
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+  if (!http.begin(client,
+    "https://careers.zelbytes.com/api/iot-lab/v1/mqtt/publish"))
+    return false;
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("X-Iot-Lab-Key", IOT_LAB_KEY);
+  String topic = "zelbytes/lab/" + String(config.nodeId) + "/telemetry";
+  String body = "{\"topic\":\"" + topic +
+    "\",\"payload\":" + payload + "}";
+  int code = http.POST(body);
+  String resp = http.getString();
+  http.end();
+  Serial.printf("MQTT publish HTTP %d\n", code);
+  return code == 200 || code == 202;
+}
+
+// ============ Soak Log ============
+void logSoakMetrics() {
+  metrics.uptimeSec = (millis() - startTime) / 1000;
+  int8_t rssi = (int8_t)WiFi.RSSI();
+  if (rssi < metrics.minRssi) metrics.minRssi = rssi;
+  Serial.printf(
+    "SOAK {\"uptime_h\":%.2f,\"mqtt_reconn\":%u,"
+    "\"dht_fail\":%u,\"http_fail\":%u,\"min_rssi\":%d}\n",
+    metrics.uptimeSec / 3600.0f, metrics.mqttReconnects,
+    metrics.dhtFailures, metrics.httpFailures, metrics.minRssi);
+}
+
+// ============ Setup ============
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+  delay(2000);
+
+  // Load NVS config
+  loadConfig(config);
+  if (config.configVersion == 0) {
+    Serial.println("First boot - saving config to NVS...");
+    strncpy(config.wifiSsid, WIFI_SSID, sizeof(config.wifiSsid));
+    strncpy(config.wifiPass, WIFI_PASSWORD, sizeof(config.wifiPass));
+    strncpy(config.mqttHost, MQTT_BROKER, sizeof(config.mqttHost));
+    strncpy(config.nodeId, NODE_ID, sizeof(config.nodeId));
+    config.sampleIntervalSec = 60;
+    config.configVersion = 1;
+    saveConfig(config);
+  }
+  Serial.printf("Config loaded - node_id: %s interval: %ds\n",
+    config.nodeId, config.sampleIntervalSec);
+
+  // WiFi connect
+  WiFi.begin(config.wifiSsid, config.wifiPass);
+  while (WiFi.status() != WL_CONNECTED) delay(200);
+  Serial.println("WiFi connected");
+  Serial.printf("IP: %s RSSI: %d dBm\n",
+    WiFi.localIP().toString().c_str(), WiFi.RSSI());
+
+  metrics.minRssi = (int8_t)WiFi.RSSI();
+  startTime = millis();
+
+  Serial.println("=== Capstone Node Ready ===");
+}
+
+// ============ Loop ============
+unsigned long lastPost = 0;
+
+void loop() {
+  // WiFi reconnect
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi lost - reconnecting...");
+    metrics.mqttReconnects++;
+    WiFi.reconnect();
+    delay(5000);
+    return;
+  }
+
+  // Check serial commands
+  if (Serial.available()) {
+    String cmd = Serial.readStringUntil('\n');
+    cmd.trim();
+    handleCommand("{\"cmd\":\"" + cmd + "\",\"command_id\":\"serial-01\"}");
+  }
+
+  // Publish every 60 seconds
+  if (millis() - lastPost > 60000) {
+    lastPost = millis();
+
+    // Read DHT22
+    Reading r = readDhtRobust();
+    if (r.valid) {
+      Serial.printf("Temp: %.1f C  Humidity: %.1f%%\n",
+        r.tempC, r.humidityPct);
+
+      // Build JSON bundle
+      String json = buildSensorBundle(r);
+      Serial.println("Bundle: " + json);
+
+      // MQTT publish
+      publishMqtt(json);
+
+      // HTTPS POST backup
+      postTelemetry(json);
+
+    } else {
+      Serial.println("DHT read failed!");
+    }
+  }
+
+  // Soak log every 75 seconds
+  if (millis() - lastSoakLog > 75000) {
+    lastSoakLog = millis();
+    logSoakMetrics();
+  }
+}

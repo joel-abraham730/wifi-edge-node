@@ -1,0 +1,33 @@
+# Alert Threshold Specification - Mushroom Polyhouse
+
+## Temperature Thresholds
+- Target range: 24-30°C
+- Alert low: < 24°C (mushroom growth slows)
+- Alert high: > 30°C (mushroom growth stops, heat stress)
+- Critical high: > 35°C (crop damage risk)
+
+## Humidity Thresholds
+- Target range: 85-92%
+- Alert low: < 85% (mushroom drying out)
+- Alert high: > 92% (fungal overload risk)
+- Critical low: < 70% (immediate irrigation needed)
+
+## WiFi Signal Thresholds
+- Good: > -60 dBm
+- Acceptable: -60 to -70 dBm
+- Alert: < -70 dBm (connectivity risk)
+
+## Node Offline Detection
+- Method: MQTT LWT (Last Will Testament)
+- LWT topic: zelbytes/lab/{node_id}/status
+- LWT payload: "offline"
+- Alert after: Immediate (LWT triggered by broker)
+- Recovery: Node publishes "online" on reconnect
+
+## Alert Actions
+| Alert | Action |
+|-------|--------|
+| Low humidity | Trigger irrigation via IRRIGATE command |
+| High temp | Activate ventilation |
+| Node offline | Notify farm manager |
+| Low RSSI | Check WiFi coverage |

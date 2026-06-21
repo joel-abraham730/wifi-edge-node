@@ -1,0 +1,24 @@
+# Data Binding Documentation
+
+## Widget to API Mapping
+
+| UI Widget | Data Source | Endpoint/Topic | Update Rate |
+|-----------|-------------|----------------|-------------|
+| Node status | MQTT LWT | zelbytes/lab/{node}/status | Instant |
+| Latest temp/humidity | HTTP GET | GET /telemetry/latest | Every 60s |
+| 24h charts | HTTP GET | GET /telemetry/series?limit=24 | Every 5min |
+| Alert badges | Frontend logic | Compare vs thresholds | Every 60s |
+| Last seen timestamp | HTTP GET | GET /telemetry/latest → recorded_at | Every 60s |
+| RSSI value | MQTT publish | zelbytes/lab/{node}/telemetry | Every 60s |
+
+## API Base URL
+https://careers.zelbytes.com/api/iot-lab/v1
+
+## Authentication
+Header: X-Iot-Lab-Key: YOUR_API_KEY
+
+## Future Integration
+When careers.zelbytes.com fleet API launches:
+- WebSocket for real-time MQTT updates
+- Per-device JWT authentication
+- Fleet-wide dashboard endpoint

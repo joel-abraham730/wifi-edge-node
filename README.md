@@ -32,7 +32,8 @@ at Zelbytes Agritech.
 - TASK9/DAY18 - TLS/WiFi Security Basics and threat model
 - TASK9/DAY19 - Edge Node Configuration Management with NVS
 - TASK9/DAY20 - Field Deployment Package and Soak Test
-
+- TASK10/DAY21 - Telemetry Dashboard Wireframe
+- TASK10/DAY22 - Capstone: Complete WiFi Edge Node
 
 ## Board
 - DOIT ESP32 DEVKIT V1

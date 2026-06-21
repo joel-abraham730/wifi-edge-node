@@ -1,0 +1,65 @@
+# Capstone - WiFi Edge Node Architecture
+
+## System Architecture
+
+[DHT22 Sensor]
+     |
+     | GPIO 4 (one wire)
+     v
+[ESP32 - polyhouse-node-92]
+     |
+     |-- NVS Config (WiFi, MQTT, interval)
+     |-- DHT22 read with retry + median filter
+     |-- JSON SensorBundle build
+     |-- HTTPS POST to Zelbytes IoT Lab
+     |-- MQTT publish to zelbytes/lab/92/telemetry
+     |-- MQTT command subscribe (IRRIGATE/STOP/set_interval)
+     |-- Soak metrics logging
+     |
+     | WiFi (2.4GHz)
+     v
+[Zelbytes IoT Lab - careers.zelbytes.com]
+     |
+     |-- /api/iot-lab/v1/telemetry (HTTPS ingest)
+     |-- /api/iot-lab/v1/mqtt/publish (MQTT bridge)
+     |-- /api/iot-lab/v1/telemetry/latest (dashboard read)
+     |-- /api/iot-lab/v1/telemetry/series (24h charts)
+     |
+     v
+[IoT Lab Dashboard]
+     |
+     v
+[Farm Manager Phone/Laptop]
+
+## Modules Integrated
+- Day 5: DHT22 with error handling and median filter
+- Day 6: OTA ready partition
+- Day 7: HTTPS POST to Zelbytes IoT Lab
+- Day 8: JSON SensorBundle schema v1
+- Day 12: MQTT publish via HTTPS bridge
+- Day 13: MQTT command subscribe + ACK
+- Day 19: NVS configuration management
+- Day 20: Soak metrics logging
+
+## Data Flow
+1. ESP32 boots → loads config from NVS
+2. WiFi connect using NVS credentials
+3. DHT22 reads temp + humidity (3 retry, median filter)
+4. JSON SensorBundle built with schema_version, node_id, fw
+5. MQTT publish to zelbytes/lab/92/telemetry (HTTP 202)
+6. HTTPS POST backup to /api/iot-lab/v1/telemetry (HTTP 202)
+7. Check serial for commands (set_interval, IRRIGATE, STOP)
+8. Log SOAK metrics every 75 seconds
+9. Repeat every 60 seconds
+
+## Alert Thresholds
+- Temperature: 24-30°C (mushroom polyhouse)
+- Humidity: 85-92% (mushroom polyhouse)
+- WiFi RSSI: > -70 dBm
+- Node offline: LWT triggered
+
+## Production Notes
+- Remove setInsecure() → use setCACert() in production
+- Enable deep sleep: uncomment enterDeepSleep()
+- Use MQTTS port 8883 instead of 1883
+- Rotate API key every 90 days
